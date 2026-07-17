@@ -42,5 +42,28 @@ public class ChromiumEventAdapter {
         return res;
     }
 
-    // TODO: Add native hooks, batching, and timestamp preservation for high-fidelity injection.
+    /**
+     * Inject a batch of events in order while preserving event timestamps.
+     * This helps preserve temporal spacing when forwarding synthesized sequences.
+     */
+    public boolean injectBatch(MotionEvent[] events) {
+        if (webView == null || events == null) return false;
+        boolean anyConsumed = false;
+        for (MotionEvent e : events) {
+            if (e == null) continue;
+            // Clone to avoid recycling side-effects from callers
+            MotionEvent clone = MotionEvent.obtain(e);
+            try {
+                anyConsumed |= webView.dispatchTouchEvent(clone);
+            } catch (Throwable ignored) {
+            } finally {
+                clone.recycle();
+            }
+        }
+        return anyConsumed;
+    }
+
+    // NOTE: Future improvement: replace dispatchTouchEvent with a JNI/native
+    // injection to Chromium's InputInjector for lower latency and timestamp fidelity.
 }
+
