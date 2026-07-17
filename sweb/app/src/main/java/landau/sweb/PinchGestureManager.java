@@ -100,11 +100,14 @@ public class PinchGestureManager {
         Log.d(TAG, "B-Zone DOWN at y=" + y);
     }
 
+    private float lastKnownY = 0f;
+
     /**
      * Called on MOVE events for the B-zone pointer.
      * @param currentY current Y of the B-zone pointer
      */
     public void onBZoneMove(float currentY) {
+        lastKnownY = currentY;
         if (!gestureActive) return;
 
         float dy = currentY - downY; // positive = finger moved down; negative = finger moved up
@@ -181,8 +184,9 @@ public class PinchGestureManager {
      */
     public void resumeScrollIfActive() {
         if (!gestureActive) return;
-        // Re-evaluate based on current finger position — caller should call onBZoneMove again
         Log.d(TAG, "B-Zone scroll RESUMED");
+        // Re-trigger move logic with the last known position to restart continuous scroll if needed
+        onBZoneMove(lastKnownY);
     }
 
     /**

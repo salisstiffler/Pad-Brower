@@ -11,11 +11,11 @@ public class PinchZoneConfig {
 
     // --- Edge Detection Zone (triggers B-zone creation) ---
     /** Width of the edge detection strip on left/right sides, in mm */
-    public static final float EDGE_STRIP_MM = 6.0f;
+    public static float EDGE_STRIP_MM = 6.0f;
 
     // --- B-Zone Timing ---
     /** Time in ms the user must hold in the edge zone to activate B-zone */
-    public static final long B_ZONE_ACTIVATE_DELAY_MS = 500;
+    public static long B_ZONE_ACTIVATE_DELAY_MS = 500;
 
     /** Time in ms after leaving B-zone before it auto-dismisses */
     public static final long B_ZONE_DISMISS_DELAY_MS = 1500;

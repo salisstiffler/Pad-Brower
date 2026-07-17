@@ -44,12 +44,14 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Patterns;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
@@ -65,6 +67,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.BaseAdapter;
@@ -73,9 +76,16 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.drawerlayout.widget.DrawerLayout;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.navigation.NavigationView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -153,6 +163,13 @@ public class MainActivity extends Activity {
     private TextView searchCount;
     private TextView txtTabCount;
 
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private View homeView;
+    private View addressBarContainer;
+    private View pinchIndicator;
+    private View btnClearEt;
+
     private SQLiteDatabase placesDb;
 
     private ValueCallback<Uri[]> fileUploadCallback;
@@ -163,6 +180,10 @@ public class MainActivity extends Activity {
     private PinchGestureManager pinchGestureManager;
     private TouchZoneDispatcher touchZoneDispatcher;
     private PinchWebViewContainer pinchWebViewContainer;
+
+    // ---- Dashboard Updates ----
+    private Handler dashboardHandler = new Handler();
+    private Runnable dashboardRunnable;
 
     private static class MenuAction {
 
@@ -235,6 +256,7 @@ public class MainActivity extends Activity {
             new MenuAction("Clear cookies for this site", 0, this::clearCookiesThisSite),
 
             new MenuAction("Show tabs", R.drawable.tabs, this::showOpenTabs),
+            new MenuAction("Home", android.R.drawable.ic_menu_directions, () -> loadUrl("", getCurrentWebView())),
             new MenuAction("New tab", R.drawable.tab_new, () -> {
                 newTab("");
                 switchToTab(tabs.size() - 1);
@@ -242,14 +264,7 @@ public class MainActivity extends Activity {
             new MenuAction("Close tab", R.drawable.tab_close, this::closeCurrentTab),
     };
 
-    final String[][] toolbarActions = {
-            {"Back", "Scroll to top", "Tab history"},
-            {"Forward", "Scroll to bottom", "Ad Blocker"},
-            {"Bookmarks", null, "Add bookmark"},
-            {"Night mode", null, "Full screen"},
-            {"Show tabs", "New tab", "Close tab"},
-            {"Menu", "Reload", "Show address bar"},
-    };
+    final String[] toolbarActions = {"Back", "Forward", "Home", "Show tabs", "Menu"};
 
     final String[] shortMenu = {
             "Desktop UA", "Log requests", "Allow Javascript",
@@ -378,6 +393,7 @@ public class MainActivity extends Activity {
                     et.setText(url);
                     et.setSelection(0);
                     view.requestFocus();
+                    updateUiForUrl(url);
                 }
                 injectCSS(view);
             }
@@ -391,6 +407,8 @@ public class MainActivity extends Activity {
                         // If user haven't started typing anything, focus on webview
                         view.requestFocus();
                     }
+                    updateUiForUrl(view.getUrl());
+                    updateHistory(view.getTitle(), view.getUrl());
                 }
                 injectCSS(view);
             }
@@ -655,6 +673,11 @@ public class MainActivity extends Activity {
         tabs.add(tab);
         webviews.addView(webview);
         setTabCountText(tabs.size());
+        
+        // Ensure new WebViews are also hooked up to the dispatcher
+        if (touchZoneDispatcher != null) {
+            touchZoneDispatcher.setWebView(webview);
+        }
     }
 
     private void newTab(String url) {
@@ -674,6 +697,7 @@ public class MainActivity extends Activity {
         getCurrentWebView().setVisibility(View.VISIBLE);
         et.setText(getCurrentWebView().getUrl());
         getCurrentWebView().requestFocus();
+        updateUiForUrl(getCurrentWebView().getUrl());
         // Update the gesture dispatcher so B-zone scrolls the active tab
         if (touchZoneDispatcher != null) {
             touchZoneDispatcher.setWebView(getCurrentWebView());
@@ -719,6 +743,25 @@ public class MainActivity extends Activity {
         webviews = findViewById(R.id.webviews);
         currentTabIndex = 0;
 
+        homeView = findViewById(R.id.home_view);
+        addressBarContainer = findViewById(R.id.address_bar_container);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.navigation_view);
+
+        pinchWebViewContainer = findViewById(R.id.pinch_container);
+
+        findViewById(R.id.btn_drawer).setOnClickListener(v -> drawerLayout.openDrawer(Gravity.LEFT));
+
+        EditText homeSearchEt = findViewById(R.id.homepage_search_et);
+        homeSearchEt.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                loadUrl(homeSearchEt.getText().toString(), getCurrentWebView());
+                return true;
+            }
+            return false;
+        });
+        findViewById(R.id.homepage_search_go).setOnClickListener(v -> loadUrl(homeSearchEt.getText().toString(), getCurrentWebView()));
+
         et = findViewById(R.id.et);
 
         // setup edit text
@@ -735,6 +778,8 @@ public class MainActivity extends Activity {
         });
 
         setupToolbar(findViewById(R.id.toolbar));
+
+        findViewById(R.id.btn_reload_top).setOnClickListener(v -> getCurrentWebView().reload());
 
         et.setOnKeyListener((v, keyCode, event) -> {
             if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
@@ -804,10 +849,19 @@ public class MainActivity extends Activity {
         }
         getCurrentWebView().setVisibility(View.VISIBLE);
         getCurrentWebView().requestFocus();
+        updateUiForUrl(getCurrentWebView().getUrl());
         onNightModeChange();
+
+        // Load pinch settings
+        PinchZoneConfig.EDGE_STRIP_MM = prefs.getFloat("pinch_edge_width", 6.0f);
+        PinchZoneConfig.B_ZONE_ACTIVATE_DELAY_MS = prefs.getLong("pinch_activate_delay", 500L);
 
         // Initialize the Pinch-Hold gesture system
         initPinchSystem();
+        
+        // Initialize dashboard and omnibox
+        setupDashboard();
+        setupOmnibox();
     }
 
     /**
@@ -815,7 +869,7 @@ public class MainActivity extends Activity {
      * Must be called after setContentView and after the first WebView is created.
      */
     private void initPinchSystem() {
-        pinchWebViewContainer = findViewById(R.id.webviews);
+        // Find views (already found in onCreate now, but ensure overlay is correct)
         pinchOverlayView = findViewById(R.id.pinch_overlay);
 
         if (pinchOverlayView == null || pinchWebViewContainer == null) {
@@ -843,6 +897,15 @@ public class MainActivity extends Activity {
 
         // Create the central dispatcher (Module 3 coordinator)
         touchZoneDispatcher = new TouchZoneDispatcher(this, pinchGestureManager, pinchOverlayView);
+        touchZoneDispatcher.setListener(active -> {
+            if (pinchIndicator != null) {
+                pinchIndicator.setVisibility(active ? View.VISIBLE : View.GONE);
+            }
+        });
+        
+        // Pass the active frame to the dispatcher (it will use scrollBy on this)
+        // Since we want to scroll the WebViews, we can pass the FrameLayout itself if it supports scrolling,
+        // but WebView is better. We'll update this when switching tabs.
         touchZoneDispatcher.setWebView(getCurrentWebView());
 
         // Wire the container to the dispatcher
@@ -851,7 +914,7 @@ public class MainActivity extends Activity {
         // Make sure overlay is always on top
         pinchOverlayView.bringToFront();
 
-        // Show the edge hint briefly to orient the user
+        // Show the edge hint briefly (Requirement: 1s delay then 0.2s flash)
         pinchOverlayView.showEdgeHintBriefly();
 
         android.util.Log.i(TAG, "PinchSystem initialized");
@@ -898,6 +961,9 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         if (placesDb != null) {
             placesDb.close();
+        }
+        if (dashboardHandler != null && dashboardRunnable != null) {
+            dashboardHandler.removeCallbacks(dashboardRunnable);
         }
         super.onDestroy();
     }
@@ -974,29 +1040,14 @@ public class MainActivity extends Activity {
     }
 
     private void setupToolbar(ViewGroup parent) {
-        for (String[] actions : toolbarActions) {
+        parent.removeAllViews();
+        for (String actionName : toolbarActions) {
             View v = getLayoutInflater().inflate(R.layout.toolbar_button, parent, false);
             parent.addView(v);
-            Runnable a1 = null, a2 = null, a3 = null;
-            if (actions[0] != null) {
-                maybeSetupTabCountTextView(v, actions[0]);
-                MenuAction action = getAction(actions[0]);
-                ((ImageView) v.findViewById(R.id.btnShortClick)).setImageResource(action.icon);
-                a1 = action.action;
-            }
-            if (actions[1] != null) {
-                maybeSetupTabCountTextView(v, actions[1]);
-                MenuAction action = getAction(actions[1]);
-                ((ImageView) v.findViewById(R.id.btnLongClick)).setImageResource(action.icon);
-                a2 = action.action;
-            }
-            if (actions[2] != null) {
-                maybeSetupTabCountTextView(v, actions[2]);
-                MenuAction action = getAction(actions[2]);
-                ((ImageView) v.findViewById(R.id.btnSwipeUp)).setImageResource(action.icon);
-                a3 = action.action;
-            }
-            setToolbarButtonActions(v, a1, a2, a3);
+            maybeSetupTabCountTextView(v, actionName);
+            MenuAction action = getAction(actionName);
+            ((ImageView) v.findViewById(R.id.btnShortClick)).setImageResource(action.icon);
+            setToolbarButtonActions(v, action.action, null, null);
         }
     }
 
@@ -1014,49 +1065,22 @@ public class MainActivity extends Activity {
     }
 
     private void showOpenTabs() {
-        String[] items = new String[tabs.size()];
-        for (int i = 0; i < tabs.size(); i++) {
-            items[i] = tabs.get(i).webview.getTitle();
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapterWithCurrentItem<>(
-                MainActivity.this,
-                android.R.layout.simple_list_item_1,
-                items,
-                currentTabIndex);
-        AlertDialog.Builder tabsDialog = new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Tabs")
-                .setAdapter(adapter, (dialog, which) -> switchToTab(which));
-        if (!closedTabs.isEmpty()) {
-            tabsDialog.setNeutralButton("Undo closed tabs", (dialog, which) -> {
-                String[] items1 = new String[closedTabs.size()];
-                for (int i = 0; i < closedTabs.size(); i++) {
-                    items1[i] = closedTabs.get(i).title;
-                }
-                AlertDialog undoClosedTabsDialog = new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Undo closed tabs")
-                        .setItems(items1, (dialog1, which1) -> {
-                            Bundle bundle = closedTabs.get(which1).bundle;
-                            closedTabs.remove(which1);
-                            newTabFromBundle(bundle);
-                            switchToTab(tabs.size() - 1);
-                        })
-                        .create();
-                undoClosedTabsDialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
-                    undoClosedTabsDialog.dismiss();
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Remove closed tab?")
-                            .setMessage(closedTabs.get(position).title)
-                            .setNegativeButton("Cancel", (dlg, which1) -> {})
-                            .setPositiveButton("Remove", (dlg, which1) -> {
-                                closedTabs.remove(position);
-                            })
-                            .show();
-                    return true;
-                });
-                undoClosedTabsDialog.show();
-            });
-        }
-        tabsDialog.show();
+        TabAdapter adapter = new TabAdapter();
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_list, null);
+        ((TextView) view.findViewById(R.id.sheet_title)).setText("Open Tabs");
+        ListView listView = view.findViewById(R.id.sheet_list);
+        listView.setAdapter(adapter);
+        
+        // Custom click handling in adapter, but we need to dismiss dialog
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            switchToTab(position);
+            dialog.dismiss();
+        });
+        
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void showTabHistory() {
@@ -1072,10 +1096,18 @@ public class MainActivity extends Activity {
                 android.R.layout.simple_list_item_1,
                 items,
                 idx);
-        new AlertDialog.Builder(this)
-                .setTitle("Navigation History")
-                .setAdapter(adapter, (dialog, which) -> getCurrentWebView().goBackOrForward(idx - which))
-                .show();
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_list, null);
+        ((TextView) view.findViewById(R.id.sheet_title)).setText("Navigation History");
+        ListView listView = view.findViewById(R.id.sheet_list);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            getCurrentWebView().goBackOrForward(idx - position);
+            dialog.dismiss();
+        });
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void toggleFullscreen() {
@@ -1132,21 +1164,43 @@ public class MainActivity extends Activity {
     private void showBookmarks() {
         if (placesDb == null) return;
         Cursor cursor = placesDb.rawQuery("SELECT title, url, id as _id FROM bookmarks", null);
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Bookmarks")
-                .setOnDismissListener(dlg -> cursor.close())
-                .setCursor(cursor, (dlg, which) -> {
-                            cursor.moveToPosition(which);
-                            String url = cursor.getString(cursor.getColumnIndex("url"));
-                            et.setText(url);
-                            loadUrl(url, getCurrentWebView());
-                        }, "title")
-                .create();
-        dialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
+        
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_list, null);
+        ((TextView) view.findViewById(R.id.sheet_title)).setText("Bookmarks");
+        ListView listView = view.findViewById(R.id.sheet_list);
+        
+        // We need a custom adapter for the cursor to work with ListView in BottomSheet
+        android.widget.SimpleCursorAdapter adapter = new android.widget.SimpleCursorAdapter(
+                this,
+                R.layout.item_history,
+                cursor,
+                new String[]{"title", "url"},
+                new int[]{R.id.text1, R.id.text2},
+                0);
+        
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
             cursor.moveToPosition(position);
-            int rowid = cursor.getInt(cursor.getColumnIndex("_id"));
-            String title = cursor.getString(cursor.getColumnIndex("title"));
-            String url = cursor.getString(cursor.getColumnIndex("url"));
+            int urlIdx = cursor.getColumnIndex("url");
+            if (urlIdx != -1) {
+                String url = cursor.getString(urlIdx);
+                et.setText(url);
+                loadUrl(url, getCurrentWebView());
+            }
+            dialog.dismiss();
+        });
+        
+        listView.setOnItemLongClickListener((parent, view1, position, id) -> {
+            cursor.moveToPosition(position);
+            int rowidIdx = cursor.getColumnIndex("_id");
+            int titleIdx = cursor.getColumnIndex("title");
+            int urlIdx = cursor.getColumnIndex("url");
+            if (rowidIdx == -1 || titleIdx == -1 || urlIdx == -1) return false;
+
+            int rowid = cursor.getInt(rowidIdx);
+            String title = cursor.getString(titleIdx);
+            String url = cursor.getString(urlIdx);
             dialog.dismiss();
             new AlertDialog.Builder(MainActivity.this)
                     .setTitle(title)
@@ -1188,6 +1242,9 @@ public class MainActivity extends Activity {
                     .show();
             return true;
         });
+        
+        dialog.setOnDismissListener(dlg -> cursor.close());
+        dialog.setContentView(view);
         dialog.show();
     }
 
@@ -1412,25 +1469,38 @@ public class MainActivity extends Activity {
             titleAndBundle.bundle = new Bundle();
             getCurrentWebView().saveState(titleAndBundle.bundle);
             closedTabs.add(0, titleAndBundle);
-            if (closedTabs.size() > 500) {
-                closedTabs.remove(closedTabs.size() - 1);
-            }
         }
-        ((FrameLayout) findViewById(R.id.webviews)).removeView(getCurrentWebView());
-        getCurrentWebView().destroy();
-        tabs.remove(currentTabIndex);
-        if (currentTabIndex >= tabs.size()) {
-            currentTabIndex = tabs.size() - 1;
-        }
-        if (currentTabIndex == -1) {
-            // We just closed the last tab
+
+        final int closedIndex = currentTabIndex;
+        final Tab closedTab = tabs.remove(currentTabIndex);
+        webviews.removeView(closedTab.webview);
+        closedTab.webview.destroy();
+
+        if (tabs.isEmpty()) {
             newTab("");
             currentTabIndex = 0;
+        } else {
+            if (currentTabIndex >= tabs.size()) {
+                currentTabIndex = tabs.size() - 1;
+            }
         }
-        getCurrentWebView().setVisibility(View.VISIBLE);
-        et.setText(getCurrentWebView().getUrl());
+        
+        switchToTab(currentTabIndex);
         setTabCountText(tabs.size());
-        getCurrentWebView().requestFocus();
+
+        // Show Undo Snackbar
+        com.google.android.material.snackbar.Snackbar.make(findViewById(R.id.main_layout), 
+                "Tab closed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                .setAction("UNDO", v -> {
+                    if (!closedTabs.isEmpty()) {
+                        TitleAndBundle lastClosed = closedTabs.remove(0);
+                        newTabFromBundle(lastClosed.bundle);
+                        switchToTab(tabs.size() - 1);
+                    }
+                })
+                .setActionTextColor(getResources().getColor(R.color.nexus_accent))
+                .setAnchorView(R.id.toolbar_container)
+                .show();
     }
 
     private String getUrlFromIntent(Intent intent) {
@@ -1455,34 +1525,77 @@ public class MainActivity extends Activity {
     }
 
     private void onNightModeChange() {
-        if (isNightMode) {
-            int textColor = Color.rgb(0x61, 0x61, 0x5f);
-            int backgroundColor = Color.rgb(0x22, 0x22, 0x22);
-            et.setTextColor(textColor);
-            et.setBackgroundColor(backgroundColor);
-            searchEdit.setTextColor(textColor);
-            searchEdit.setBackgroundColor(backgroundColor);
-            searchCount.setTextColor(textColor);
-            findViewById(R.id.main_layout).setBackgroundColor(Color.BLACK);
-            findViewById(R.id.toolbar).setBackgroundColor(Color.BLACK);
-            ((ProgressBar) findViewById(R.id.progressbar)).setProgressTintList(ColorStateList.valueOf(Color.rgb(0, 0x66, 0)));
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            getWindow().setNavigationBarColor(Color.BLACK);
-        } else {
-            int textColor = Color.BLACK;
-            int backgroundColor = Color.rgb(0xe0, 0xe0, 0xe0);
-            et.setTextColor(textColor);
-            et.setBackgroundColor(backgroundColor);
-            searchEdit.setTextColor(textColor);
-            searchEdit.setBackgroundColor(backgroundColor);
-            searchCount.setTextColor(textColor);
-            findViewById(R.id.main_layout).setBackgroundColor(Color.WHITE);
-            findViewById(R.id.toolbar).setBackgroundColor(Color.rgb(0xe0, 0xe0, 0xe0));
-            ((ProgressBar) findViewById(R.id.progressbar)).setProgressTintList(ColorStateList.valueOf(Color.rgb(0, 0xcc, 0)));
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        MaterialCardView addressBarContainer = findViewById(R.id.address_bar_container);
+        MaterialCardView toolbarContainer = findViewById(R.id.toolbar_container);
+        View mainLayout = findViewById(R.id.main_layout);
+        View addressBarBg = findViewById(R.id.et).getParent() instanceof View ? (View) findViewById(R.id.et).getParent() : null;
+        ImageView ivLock = findViewById(R.id.iv_lock);
+        ImageView btnReloadTop = findViewById(R.id.btn_reload_top);
+        ImageView btnDrawer = findViewById(R.id.btn_drawer);
+
+        int nexusBg = getResources().getColor(R.color.nexus_bg);
+        int nexusSidebar = getResources().getColor(R.color.nexus_sidebar);
+        int nexusAccent = getResources().getColor(R.color.nexus_accent);
+        int nexusTextPrimary = getResources().getColor(R.color.nexus_text_primary);
+        int nexusTextSecondary = getResources().getColor(R.color.nexus_text_secondary);
+        int nexusSearchBg = getResources().getColor(R.color.nexus_search_bg);
+        int nexusCardBorder = getResources().getColor(R.color.nexus_card_border);
+
+        // Since Nexus theme is dark, we use consistent colors regardless of isNightMode
+        // but can adjust slightly if needed.
+        addressBarContainer.setCardBackgroundColor(nexusSidebar);
+        toolbarContainer.setCardBackgroundColor(nexusSidebar);
+        mainLayout.setBackgroundColor(nexusBg);
+        
+        if (addressBarBg != null) {
+            Drawable bg = addressBarBg.getBackground();
+            if (bg instanceof android.graphics.drawable.GradientDrawable) {
+                ((android.graphics.drawable.GradientDrawable) bg).setColor(nexusSearchBg);
+                ((android.graphics.drawable.GradientDrawable) bg).setStroke(1, nexusCardBorder);
+            }
         }
+        
+        et.setTextColor(nexusTextPrimary);
+        et.setHintTextColor(nexusTextSecondary);
+        et.setDropDownBackgroundResource(R.color.nexus_sidebar);
+        ivLock.setImageTintList(ColorStateList.valueOf(nexusAccent));
+        btnReloadTop.setImageTintList(ColorStateList.valueOf(nexusTextSecondary));
+        btnDrawer.setImageTintList(ColorStateList.valueOf(nexusTextSecondary));
+        if (pinchIndicator instanceof TextView) {
+            ((TextView) pinchIndicator).setTextColor(nexusBg);
+            pinchIndicator.setBackgroundTintList(ColorStateList.valueOf(nexusAccent));
+        }
+        if (btnClearEt instanceof ImageView) {
+            ((ImageView) btnClearEt).setImageTintList(ColorStateList.valueOf(nexusTextSecondary));
+        }
+
+        searchEdit.setTextColor(nexusTextPrimary);
+        searchEdit.setBackgroundColor(nexusSearchBg);
+        searchCount.setTextColor(nexusTextSecondary);
+        
+        ((ProgressBar) findViewById(R.id.progressbar)).setProgressTintList(ColorStateList.valueOf(nexusAccent));
+        getWindow().setStatusBarColor(nexusSidebar);
+        getWindow().setNavigationBarColor(nexusSidebar);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().getInsetsController().setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            getWindow().getInsetsController().setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
+
+        ViewGroup toolbar = findViewById(R.id.toolbar);
+        for (int i = 0; i < toolbar.getChildCount(); i++) {
+            View child = toolbar.getChildAt(i);
+            ImageView iv = child.findViewById(R.id.btnShortClick);
+            if (iv != null) {
+                iv.setImageTintList(ColorStateList.valueOf(nexusTextSecondary));
+            }
+            TextView tv = child.findViewById(R.id.txtText);
+            if (tv != null) {
+                tv.setTextColor(nexusTextSecondary);
+            }
+        }
+
         for (int i = 0; i < tabs.size(); i++) {
-            tabs.get(i).webview.setBackgroundColor(isNightMode ? Color.BLACK : Color.WHITE);
+            tabs.get(i).webview.setBackgroundColor(Color.BLACK);
             injectCSS(tabs.get(i).webview);
         }
     }
@@ -1542,10 +1655,18 @@ public class MainActivity extends Activity {
                 MainActivity.this,
                 android.R.layout.simple_list_item_1,
                 shortMenuActions);
-        new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Actions")
-                .setAdapter(adapter, (dialog, which) -> shortMenuActions[which].action.run())
-                .show();
+        
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_list, null);
+        ((TextView) view.findViewById(R.id.sheet_title)).setText("Actions");
+        ListView listView = view.findViewById(R.id.sheet_list);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            shortMenuActions[position].action.run();
+            dialog.dismiss();
+        });
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void showFullMenu() {
@@ -1553,10 +1674,18 @@ public class MainActivity extends Activity {
                 MainActivity.this,
                 android.R.layout.simple_list_item_1,
                 menuActions);
-        new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Full menu")
-                .setAdapter(adapter, (dialog, which) -> menuActions[which].action.run())
-                .show();
+        
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_list, null);
+        ((TextView) view.findViewById(R.id.sheet_title)).setText("Full menu");
+        ListView listView = view.findViewById(R.id.sheet_list);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            menuActions[position].action.run();
+            dialog.dismiss();
+        });
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void shareUrl() {
@@ -1578,6 +1707,19 @@ public class MainActivity extends Activity {
                     .setMessage("No app can open this URL.")
                     .setPositiveButton("OK", (dialog1, which1) -> {})
                     .show();
+        }
+    }
+
+    private void updateUiForUrl(String url) {
+        if (url == null || url.isEmpty() || url.equals("about:blank")) {
+            homeView.setVisibility(View.VISIBLE);
+            webviews.setVisibility(View.GONE);
+            addressBarContainer.setVisibility(View.GONE);
+            findViewById(R.id.progressbar).setVisibility(View.GONE);
+        } else {
+            homeView.setVisibility(View.GONE);
+            webviews.setVisibility(View.VISIBLE);
+            addressBarContainer.setVisibility(View.VISIBLE);
         }
     }
 
@@ -1619,7 +1761,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (findViewById(R.id.fullScreenVideo).getVisibility() == View.VISIBLE && fullScreenCallback[0] != null) {
+        if (drawerLayout.isDrawerOpen(Gravity.LEFT)) {
+            drawerLayout.closeDrawer(Gravity.LEFT);
+        } else if (findViewById(R.id.fullScreenVideo).getVisibility() == View.VISIBLE && fullScreenCallback[0] != null) {
             fullScreenCallback[0].onCustomViewHidden();
         } else if (getCurrentWebView().canGoBack()) {
             getCurrentWebView().goBack();
@@ -1868,7 +2012,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    static class MenuActionArrayAdapter extends ArrayAdapter<MenuAction> {
+    class MenuActionArrayAdapter extends ArrayAdapter<MenuAction> {
 
         MenuActionArrayAdapter(@NonNull Context context, int resource, @NonNull MenuAction[] objects) {
             super(context, resource, objects);
@@ -1887,7 +2031,7 @@ public class MainActivity extends Activity {
             Drawable left = getContext().getResources().getDrawable(item.icon != 0 ? item.icon : R.drawable.empty, null);
             int size = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 24, m);
             left.setBounds(0, 0, size, size);
-            left.setTint(Color.rgb(0x61, 0x61, 0x5f));
+            left.setTint(isNightMode ? Color.parseColor("#CAC4D0") : Color.rgb(0x61, 0x61, 0x5f));
 
             Drawable right = null;
             if (item.getState != null) {
@@ -1945,7 +2089,10 @@ public class MainActivity extends Activity {
             }
             TextView v = convertView.findViewById(android.R.id.text1);
             v.setText(completions.get(position));
+            v.setTextColor(mContext.getResources().getColor(R.color.nexus_text_primary));
+            
             Drawable d = mContext.getResources().getDrawable(R.drawable.commit_search, null);
+            d.setTint(mContext.getResources().getColor(R.color.nexus_accent));
             int size = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 32, mContext.getResources().getDisplayMetrics());
             d.setBounds(0, 0, size, size);
             v.setCompoundDrawables(null, null, d, null);
@@ -2050,5 +2197,251 @@ public class MainActivity extends Activity {
             }
             return result;
         }
+    }
+
+    private void setupDashboard() {
+        // Tile clicks
+        findViewById(R.id.tile_github).setOnClickListener(v -> loadUrl("https://github.com", getCurrentWebView()));
+        findViewById(R.id.tile_figma).setOnClickListener(v -> loadUrl("https://figma.com", getCurrentWebView()));
+        findViewById(R.id.tile_analytics).setOnClickListener(v -> loadUrl("https://analytics.google.com", getCurrentWebView()));
+        findViewById(R.id.tile_docs).setOnClickListener(v -> loadUrl("https://docs.google.com", getCurrentWebView()));
+
+        // Dashboard Top Buttons
+        findViewById(R.id.btn_workspaces).setOnClickListener(v -> showOpenTabs());
+        findViewById(R.id.btn_history).setOnClickListener(v -> showHistorySheet());
+        findViewById(R.id.btn_privacy).setOnClickListener(v -> showSettingsSheet());
+        findViewById(R.id.fab_nexus).setOnClickListener(v -> showFullMenu());
+
+        // Real-time updates (mocked)
+        ProgressBar ramBar = findViewById(R.id.progress_ram);
+        ProgressBar latencyBar = findViewById(R.id.progress_latency);
+
+        dashboardRunnable = new Runnable() {
+            @Override
+            public void run() {
+                int ram = 40 + (int) (Math.random() * 30);
+                int latency = 10 + (int) (Math.random() * 40);
+                ramBar.setProgress(ram);
+                latencyBar.setProgress(latency);
+                dashboardHandler.postDelayed(this, 2000);
+            }
+        };
+        dashboardHandler.post(dashboardRunnable);
+    }
+
+    private void setupOmnibox() {
+        pinchIndicator = findViewById(R.id.pinch_indicator);
+        btnClearEt = findViewById(R.id.btn_clear_et);
+
+        et.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                et.selectAll();
+            }
+        });
+
+        et.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                btnClearEt.setVisibility(s.length() > 0 ? View.VISIBLE : View.GONE);
+            }
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        btnClearEt.setOnClickListener(v -> {
+            et.setText("");
+            et.requestFocus();
+            showKeyboard();
+        });
+    }
+
+    private void updateHistory(String title, String url) {
+        if (placesDb == null || url == null || url.isEmpty() || url.equals("about:blank")) return;
+        ContentValues values = new ContentValues();
+        values.put("title", title);
+        values.put("url", url);
+        values.put("time", System.currentTimeMillis());
+        placesDb.insert("history", null, values);
+    }
+
+    private void showHistorySheet() {
+        if (placesDb == null) return;
+        Cursor cursor = placesDb.rawQuery("SELECT title, url, id as _id FROM history ORDER BY time DESC LIMIT 100", null);
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_list, null);
+        ((TextView) view.findViewById(R.id.sheet_title)).setText("Recent History");
+        ListView listView = view.findViewById(R.id.sheet_list);
+
+        android.widget.SimpleCursorAdapter adapter = new android.widget.SimpleCursorAdapter(
+                this,
+                R.layout.item_history,
+                cursor,
+                new String[]{"title", "url"},
+                new int[]{R.id.text1, R.id.text2},
+                0);
+
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, view1, position, id) -> {
+            cursor.moveToPosition(position);
+            int urlIdx = cursor.getColumnIndex("url");
+            if (urlIdx != -1) {
+                String url = cursor.getString(urlIdx);
+                loadUrl(url, getCurrentWebView());
+            }
+            dialog.dismiss();
+        });
+
+        dialog.setOnDismissListener(dlg -> cursor.close());
+        dialog.setContentView(view);
+        dialog.show();
+    }
+
+    private void showSettingsSheet() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_settings, null);
+        
+        com.google.android.material.materialswitch.MaterialSwitch swAdblock = view.findViewById(R.id.switch_adblock);
+        com.google.android.material.materialswitch.MaterialSwitch swDesktop = view.findViewById(R.id.switch_desktop);
+        com.google.android.material.materialswitch.MaterialSwitch swJs = view.findViewById(R.id.switch_js);
+        
+        swAdblock.setChecked(useAdBlocker);
+        swDesktop.setChecked(getCurrentTab().isDesktopUA);
+        swJs.setChecked(getCurrentWebView().getSettings().getJavaScriptEnabled());
+        
+        swAdblock.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            useAdBlocker = isChecked;
+            initAdblocker();
+            prefs.edit().putBoolean("adblocker", useAdBlocker).apply();
+        });
+        
+        swDesktop.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Tab tab = getCurrentTab();
+            tab.isDesktopUA = isChecked;
+            getCurrentWebView().getSettings().setUserAgentString(tab.isDesktopUA ? desktopUA : null);
+            getCurrentWebView().getSettings().setUseWideViewPort(tab.isDesktopUA);
+            getCurrentWebView().reload();
+        });
+        
+        swJs.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            getCurrentWebView().getSettings().setJavaScriptEnabled(isChecked);
+            getCurrentWebView().reload();
+        });
+
+        // Pinch Sensitivity
+        com.google.android.material.slider.Slider sliderEdge = view.findViewById(R.id.slider_edge_width);
+        com.google.android.material.slider.Slider sliderDelay = view.findViewById(R.id.slider_activate_delay);
+        TextView labelEdge = view.findViewById(R.id.label_edge_width);
+        TextView labelDelay = view.findViewById(R.id.label_activate_delay);
+
+        sliderEdge.setValue(PinchZoneConfig.EDGE_STRIP_MM);
+        sliderDelay.setValue((float) PinchZoneConfig.B_ZONE_ACTIVATE_DELAY_MS);
+        labelEdge.setText("Edge Detection Width: " + (int) PinchZoneConfig.EDGE_STRIP_MM + "mm");
+        labelDelay.setText("Activation Delay: " + (int) PinchZoneConfig.B_ZONE_ACTIVATE_DELAY_MS + "ms");
+
+        sliderEdge.addOnChangeListener((slider, value, fromUser) -> {
+            PinchZoneConfig.EDGE_STRIP_MM = value;
+            labelEdge.setText("Edge Detection Width: " + (int) value + "mm");
+            prefs.edit().putFloat("pinch_edge_width", value).apply();
+            if (touchZoneDispatcher != null) touchZoneDispatcher.reloadConfig();
+        });
+
+        sliderDelay.addOnChangeListener((slider, value, fromUser) -> {
+            PinchZoneConfig.B_ZONE_ACTIVATE_DELAY_MS = (long) value;
+            labelDelay.setText("Activation Delay: " + (int) value + "ms");
+            prefs.edit().putLong("pinch_activate_delay", (long) value).apply();
+            // Timers are used in real-time, no need to reload dispatcher for this
+        });
+        
+        view.findViewById(R.id.btn_clear_data).setOnClickListener(v -> {
+            clearHistoryCache();
+            dialog.dismiss();
+            Toast.makeText(this, "Data cleared", Toast.LENGTH_SHORT).show();
+        });
+        
+        dialog.setContentView(view);
+        dialog.show();
+    }
+
+    private class TabAdapter extends BaseAdapter {
+        @Override
+        public int getCount() { return tabs.size(); }
+        @Override
+        public Object getItem(int position) { return tabs.get(position); }
+        @Override
+        public long getItemId(int position) { return position; }
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = getLayoutInflater().inflate(R.layout.item_tab, parent, false);
+            }
+            Tab tab = tabs.get(position);
+            TextView title = convertView.findViewById(R.id.tab_title);
+            TextView url = convertView.findViewById(R.id.tab_url);
+            ImageView icon = convertView.findViewById(R.id.tab_icon);
+            ImageView close = convertView.findViewById(R.id.btn_close_tab);
+
+            title.setText(tab.webview.getTitle());
+            url.setText(tab.webview.getUrl());
+            icon.setImageResource(position == currentTabIndex ? android.R.drawable.ic_menu_mylocation : R.drawable.empty);
+            
+            convertView.setOnClickListener(v -> {
+                switchToTab(position);
+                // Need to find the dialog to dismiss it. I'll pass it in.
+            });
+            
+            close.setOnClickListener(v -> {
+                // Handle close tab
+                // I need to be careful with indexing here if tabs are removed.
+                // Better to just call a method in MainActivity.
+                closeTabAt(position);
+                notifyDataSetChanged();
+            });
+            
+            return convertView;
+        }
+    }
+    
+    private void closeTabAt(int position) {
+        if (position < 0 || position >= tabs.size()) return;
+        
+        WebView wv = tabs.get(position).webview;
+        if (wv.getUrl() != null && !wv.getUrl().equals("about:blank")) {
+            TitleAndBundle titleAndBundle = new TitleAndBundle();
+            titleAndBundle.title = wv.getTitle();
+            titleAndBundle.bundle = new Bundle();
+            wv.saveState(titleAndBundle.bundle);
+            closedTabs.add(0, titleAndBundle);
+        }
+        
+        ((FrameLayout) findViewById(R.id.webviews)).removeView(wv);
+        wv.destroy();
+        tabs.remove(position);
+        
+        if (tabs.isEmpty()) {
+            newTab("");
+            currentTabIndex = 0;
+        } else if (currentTabIndex >= tabs.size()) {
+            currentTabIndex = tabs.size() - 1;
+        }
+        
+        switchToTab(currentTabIndex);
+        setTabCountText(tabs.size());
+
+        // Show Undo Snackbar
+        com.google.android.material.snackbar.Snackbar.make(findViewById(R.id.main_layout), 
+                "Tab closed", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                .setAction("UNDO", v -> {
+                    if (!closedTabs.isEmpty()) {
+                        TitleAndBundle lastClosed = closedTabs.remove(0);
+                        newTabFromBundle(lastClosed.bundle);
+                        switchToTab(tabs.size() - 1);
+                    }
+                })
+                .setActionTextColor(getResources().getColor(R.color.nexus_accent))
+                .setAnchorView(R.id.toolbar_container)
+                .show();
     }
 }

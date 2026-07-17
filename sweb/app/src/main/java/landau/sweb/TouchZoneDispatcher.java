@@ -67,18 +67,31 @@ public class TouchZoneDispatcher {
     private final PinchGestureManager gestureManager;
     private final PinchOverlayView overlayView;
 
+    public interface Listener {
+        void onBZoneStateChanged(boolean active);
+    }
+
+    private Listener listener;
+
+    public void setListener(Listener listener) {
+        this.listener = listener;
+    }
+
     public TouchZoneDispatcher(Context context,
                                PinchGestureManager gestureManager,
                                PinchOverlayView overlayView) {
         this.context = context;
         this.gestureManager = gestureManager;
         this.overlayView = overlayView;
-        computeThresholds();
+        reloadConfig();
     }
 
-    private void computeThresholds() {
+    public void reloadConfig() {
         edgeStripWidthPx = PinchZoneConfig.mmToPx(context, PinchZoneConfig.EDGE_STRIP_MM);
         bZoneRadiusPx = PinchZoneConfig.mmToPx(context, PinchZoneConfig.B_ZONE_RADIUS_MM);
+        if (overlayView != null) {
+            overlayView.init(edgeStripWidthPx, bZoneRadiusPx);
+        }
     }
 
     public void setWebView(WebView webView) {
@@ -214,7 +227,8 @@ public class TouchZoneDispatcher {
         if (bZoneState == BZoneState.INACTIVE && isInEdgeStrip(x)) {
             // Start long-press timer to activate B-zone
             startPendingActivation(pointerId, x, y);
-            return true; // consumed — block this event from WebView during detection
+            // DO NOT return true. Let this DOWN event pass to WebView so it can detect clicks.
+            return false; 
         }
 
         // If B-zone is already pending and the same pointer moves away, handled in MOVE
@@ -247,10 +261,12 @@ public class TouchZoneDispatcher {
                         float dy = Math.abs(y - bZoneActivationY);
                         if (dy > PinchZoneConfig.mmToPx(context, 5f)) {
                             cancelPendingActivation();
-                            // Let WebView know about this movement
+                            // Let WebView know about this movement by not consuming
                             registerAZonePointer(pId, x, y);
+                            bZoneHandled = false;
                         } else {
-                            bZoneHandled = true;
+                            // Still within threshold, let WebView track it too (for potential tap)
+                            bZoneHandled = false;
                         }
                         break;
 
@@ -342,10 +358,22 @@ public class TouchZoneDispatcher {
         bZoneState = BZoneState.ACTIVE;
         Log.d(TAG, "B-Zone ACTIVATED at (" + bZoneCenterX + ", " + bZoneCenterY + ")");
 
+        // IMPORTANT: Send CANCEL to WebView for the current touch to stop its internal long-press/click logic
+        if (webView != null) {
+            long now = android.os.SystemClock.uptimeMillis();
+            MotionEvent cancel = MotionEvent.obtain(now, now, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+            webView.dispatchTouchEvent(cancel);
+            cancel.recycle();
+        }
+
         // Show the visual
         overlayView.showBZone(bZoneCenterX, bZoneCenterY);
         // Notify gesture manager
         gestureManager.onBZoneDown(bZoneCenterY);
+        
+        if (listener != null) {
+            listener.onBZoneStateChanged(true);
+        }
     }
 
     private void cancelPendingActivation() {
@@ -377,6 +405,10 @@ public class TouchZoneDispatcher {
         bZonePointerId = -1;
         gestureManager.stopGesture();
         overlayView.hideBZone();
+        
+        if (listener != null) {
+            listener.onBZoneStateChanged(false);
+        }
     }
 
     private void handleBZonePointerDown(int pointerId, float x, float y) {

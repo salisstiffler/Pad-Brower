@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/nexus_sidebar"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Top: Logo and Title -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_compass"
+            app:tint="@color/nexus_accent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Nexus"
+            android:textColor="@color/nexus_text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.1"
+            android:text="SYNTHETIC INTELLIGENCE"
+            android:textColor="@color/nexus_text_secondary"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Active Nodes Label -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="ACTIVE NODES (5 RUNNING)"
+        android:textColor="@color/nexus_text_secondary"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <!-- Navigation Items -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="vertical">
+
+        <!-- Current Session (Selected) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/nav_current_session"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            app:cardBackgroundColor="@color/nexus_accent"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingLeft="12dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_myplaces"
+                    app:tint="@color/white" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="12dp"
+                    android:text="Current Session"
+                    android:textColor="@color/white"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Research Thread -->
+        <TextView
+            android:id="@+id/nav_research"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="12dp"
+            android:gravity="center_vertical"
+            android:paddingLeft="12dp"
+            android:text="Research Thread"
+            android:textColor="@color/nexus_text_secondary"
+            app:drawableTint="@color/nexus_text_secondary" />
+
+        <!-- Development -->
+        <TextView
+            android:id="@+id/nav_development"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:drawableStart="@android:drawable/ic_menu_view"
+            android:drawablePadding="12dp"
+            android:gravity="center_vertical"
+            android:paddingLeft="12dp"
+            android:text="Development"
+            android:textColor="@color/nexus_text_secondary"
+            app:drawableTint="@color/nexus_text_secondary" />
+
+        <!-- Financials -->
+        <TextView
+            android:id="@+id/nav_financials"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:drawableStart="@android:drawable/ic_menu_save"
+            android:drawablePadding="12dp"
+            android:gravity="center_vertical"
+            android:paddingLeft="12dp"
+            android:text="Financials"
+            android:textColor="@color/nexus_text_secondary"
+            app:drawableTint="@color/nexus_text_secondary" />
+
+        <!-- Archives -->
+        <TextView
+            android:id="@+id/nav_archives"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:drawableStart="@android:drawable/ic_menu_recent_history"
+            android:drawablePadding="12dp"
+            android:gravity="center_vertical"
+            android:paddingLeft="12dp"
+            android:text="Archives"
+            android:textColor="@color/nexus_text_secondary"
+            app:drawableTint="@color/nexus_text_secondary" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Bottom Items -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_new_instance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="+ New Instance"
+        android:textAllCaps="false"
+        android:textColor="@color/nexus_bg"
+        app:backgroundTint="#8AB4F8"
+        app:cornerRadius="8dp" />
+
+    <TextView
+        android:id="@+id/nav_settings"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:drawableStart="@android:drawable/ic_menu_preferences"
+        android:drawablePadding="12dp"
+        android:gravity="center_vertical"
+        android:text="Settings"
+        android:textColor="@color/nexus_text_secondary"
+        app:drawableTint="@color/nexus_text_secondary" />
+
+    <TextView
+        android:id="@+id/nav_help"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:drawableStart="@android:drawable/ic_menu_help"
+        android:drawablePadding="12dp"
+        android:gravity="center_vertical"
+        android:text="Help"
+        android:textColor="@color/nexus_text_secondary"
+        app:drawableTint="@color/nexus_text_secondary" />
+
+</LinearLayout>

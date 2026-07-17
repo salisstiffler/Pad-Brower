@@ -1,0 +1,24 @@
+id,title,status,owner,planned_start,planned_duration,estimate
+req-analysis,Analyzing requirements,in_progress,PM,2026-07-17,3d,3d
+ux-research,Conducting UX research,in_progress,UX Lead,2026-07-17,5d,5d
+touch-preprocessor-prototype,Building touch preprocessor prototype,in_progress,Eng-Android (Proto Lead),2026-07-17,10d,10d
+virtual-overlay-design,Designing virtual overlay,pending,Eng-Frontend,2026-07-27,4d,4d
+chromium-integration,Integrating with Chromium,pending,Eng-Android (Chromium),2026-08-02,12d,12d
+android-browser-app,Implementing Android browser app,pending,Eng-Android (App),2026-08-20,8d,8d
+harmonyos-compat,Ensuring HarmonyOS compatibility,pending,Eng-Harmony,2026-08-30,6d,6d
+single-hand-gestures,Implementing single-hand gestures,pending,Eng-Frontend,2026-07-27,6d,6d
+thumb-avoid-feature,Implementing thumb-avoid scrolling,pending,Eng-Frontend,2026-08-04,4d,4d
+usability-testing,Running usability testing,pending,QA/UX,2026-08-10,6d,6d
+automated-test-suite,Creating automated tests,pending,QA/CI,2026-08-02,5d,5d
+performance-optimization,Performance and stability optimization,pending,Eng-Perf,2026-08-16,6d,6d
+ipr-confirmation,Confirming IPR and patent compliance,pending,Legal,2026-07-20,3d,3d
+market-strategy-plan,Preparing market strategy,pending,PM/BD,2026-08-01,5d,5d
+monetization-integration,Implementing monetization channels,pending,PM/Eng-Backend,2026-08-12,4d,4d
+docs-and-sdk,Writing documentation and SDK,pending,Docs/DevRel,2026-08-10,4d,4d
+release-packaging,Packaging and release,pending,Release Engineer,2026-09-01,3d,3d
+touch-evt-capture,Event capture & pipeline,in_progress,Eng-Android,2026-07-17,2d,2d
+touch-region-algo,Region partition algorithm,in_progress,Eng-Android,2026-07-17,3d,3d
+touch-event-classify,Grip vs interaction classifier,in_progress,Eng-ML/Heuristics,2026-07-17,3d,3d
+touch-mapping-proxy,Event remapping & forwarding,pending,Eng-Android,2026-07-22,2d,2d
+touch-prototype-integration,Prototype integration,pending,Eng-Android (Integration),2026-07-24,4d,4d
+touch-verify-cases,Prototype verification cases,pending,QA,2026-07-28,2d,2d

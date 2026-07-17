@@ -49,7 +49,11 @@ public class PinchOverlayView extends View {
     private float edgeStripWidthPx = 0f;
 
     public PinchOverlayView(Context context) {
-        super(context);
+        this(context, null);
+    }
+
+    public PinchOverlayView(Context context, android.util.AttributeSet attrs) {
+        super(context, attrs);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         setFocusable(false);
         setClickable(false);
@@ -82,13 +86,15 @@ public class PinchOverlayView extends View {
      * Called once when the app starts.
      */
     public void showEdgeHintBriefly() {
-        edgeHintVisible = true;
-        edgeHintAlpha = PinchZoneConfig.EDGE_HINT_ALPHA / 255f;
-        invalidate();
+        // Requirement: "在刚打开浏览器1秒后，显示此特殊识别区...0.2秒后变成透明"
+        handler.postDelayed(() -> {
+            edgeHintVisible = true;
+            edgeHintAlpha = PinchZoneConfig.EDGE_HINT_ALPHA / 255f;
+            invalidate();
 
-        // After EDGE_HINT_SHOW_DURATION_MS, start fading out
-        handler.postDelayed(this::fadeOutEdgeHint,
-                PinchZoneConfig.EDGE_HINT_SHOW_DURATION_MS);
+            // Show for 0.2s then fade out
+            handler.postDelayed(this::fadeOutEdgeHint, 200);
+        }, 1000);
     }
 
     private void fadeOutEdgeHint() {

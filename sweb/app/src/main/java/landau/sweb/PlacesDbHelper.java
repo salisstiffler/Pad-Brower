@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import java.io.File;
 
 public class PlacesDbHelper extends SQLiteOpenHelper {
-    private static final int CURRENT_VERSION = 1;
+    private static final int CURRENT_VERSION = 2;
 
     PlacesDbHelper(Context context) {
         super(context, new File(context.getExternalFilesDir(null), "places.sqlite").getAbsolutePath(), null, CURRENT_VERSION);
@@ -16,10 +16,13 @@ public class PlacesDbHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE bookmarks (id INTEGER PRIMARY KEY, title TEXT, url TEXT)");
+        db.execSQL("CREATE TABLE history (id INTEGER PRIMARY KEY, title TEXT, url TEXT, time INTEGER)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        if (oldVersion < 2) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, title TEXT, url TEXT, time INTEGER)");
+        }
     }
 }

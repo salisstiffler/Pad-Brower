@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/nexus_sidebar">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="20dp"
+            android:text="Browser Settings"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:textColor="@color/nexus_text_primary" />
+
+        <!-- Ad Block -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="Ad Blocker"
+                android:textColor="@color/nexus_text_primary"
+                android:textSize="16sp" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_adblock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+        </RelativeLayout>
+
+        <!-- Desktop Mode -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="Desktop Mode"
+                android:textColor="@color/nexus_text_primary"
+                android:textSize="16sp" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_desktop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/nexus_card_border" />
+
+        <!-- Pinch System Settings -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp"
+            android:text="Pinch-Hold Sensitivity"
+            android:textColor="@color/nexus_accent"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/label_edge_width"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Edge Detection Width: 6mm"
+            android:textColor="@color/nexus_text_secondary"
+            android:textSize="12sp" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_edge_width"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:value="6.0"
+            android:valueFrom="4.0"
+            android:valueTo="12.0"
+            app:thumbColor="@color/nexus_accent"
+            app:trackColorActive="@color/nexus_accent" />
+
+        <TextView
+            android:id="@+id/label_activate_delay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Activation Delay: 500ms"
+            android:textColor="@color/nexus_text_secondary"
+            android:textSize="12sp" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider_activate_delay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:value="500.0"
+            android:valueFrom="200.0"
+            android:valueTo="1000.0"
+            android:stepSize="100.0"
+            app:thumbColor="@color/nexus_accent"
+            app:trackColorActive="@color/nexus_accent" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/nexus_card_border" />
+
+        <!-- Clear Data -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_clear_data"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="start|center_vertical"
+            android:text="Clear History &amp; Cache"
+            android:textColor="#FF5252"
+            app:icon="@android:drawable/ic_menu_delete"
+            app:iconTint="#FF5252" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
