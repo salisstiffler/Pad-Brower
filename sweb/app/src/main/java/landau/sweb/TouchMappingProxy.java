@@ -60,6 +60,7 @@ public class TouchMappingProxy {
             batchBuffer.clear();
         }
         try {
+            Log.d(TAG, "flushBatch: sending " + toSend.size() + " events");
             adapter.injectBatch(toSend.toArray(new MotionEvent[0]));
         } catch (Throwable t) {
             Log.w(TAG, "batch forward failed", t);
