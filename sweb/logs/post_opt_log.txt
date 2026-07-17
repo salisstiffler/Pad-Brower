@@ -1,0 +1,90 @@
+﻿
+07-17 22:36:09.382   601   601 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.enable_system
+_pinch_zoom_gesture = false
+07-17 22:36:09.382   601   601 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.support_syste
+m_pinch_zoom_opt_out_apis = false
+07-17 22:36:09.386   601   601 V AconfigFlags: Read Aconfig default flag value com.android.server.accessibility.pinch_z
+oom_zero_min_span = true
+07-17 22:36:09.412   601   601 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.enable_system
+_pinch_zoom_gesture = false
+07-17 22:36:09.412   601   601 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.support_syste
+m_pinch_zoom_opt_out_apis = false
+07-17 22:36:18.138  1570  1820 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.enable_system
+_pinch_zoom_gesture = false
+07-17 22:36:18.138  1570  1820 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.support_syste
+m_pinch_zoom_opt_out_apis = false
+07-17 22:36:18.289  1570  1820 V AconfigFlags: Read Aconfig default flag value com.android.server.accessibility.pinch_z
+oom_zero_min_span = true
+07-17 22:36:18.594  1570  1820 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.enable_system
+_pinch_zoom_gesture = false
+07-17 22:36:18.594  1570  1820 V AconfigFlags: Read Aconfig default flag value android.view.accessibility.support_syste
+m_pinch_zoom_opt_out_apis = false
+07-17 22:54:08.735  1662  1662 D TouchZoneDispatcher: B-Zone PENDING at (2495.8594, 559.9336)
+07-17 22:54:09.828  1662  1662 D TouchZoneDispatcher: B-Zone PENDING at (2512.8906, 716.96484)
+07-17 22:54:12.234  1662  1662 D TouchZoneDispatcher: B-Zone PENDING at (13.984375, 1195.9199)
+07-17 22:54:15.857  1662  1662 D TouchZoneDispatcher: B-Zone PENDING at (2517.8906, 1049.9238)
+07-17 22:54:16.358  1662  1662 D TouchZoneDispatcher: B-Zone ACTIVATED at (2517.8906, 1049.9238)
+07-17 22:54:16.358  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1049.9238
+07-17 22:54:19.092  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:19.736  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1029.9531
+07-17 22:54:19.736  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:19.943  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:20.805  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1144.9434
+07-17 22:54:20.805  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:21.620  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:21.978  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1052.9512
+07-17 22:54:21.978  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:22.124  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:22.630  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1037.9609
+07-17 22:54:22.631  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:22.801  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:23.139  1662  1662 D PinchGestureManager: B-Zone DOWN at y=993.9668
+07-17 22:54:23.139  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:23.341  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:23.681  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1159.9336
+07-17 22:54:23.681  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:24.352  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:24.590  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1037.9609
+07-17 22:54:24.591  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:33.430  1662  1662 D TouchZoneDispatcher: B-Zone PENDING at (2476.875, 1001.9258)
+07-17 22:54:33.931  1662  1662 D TouchZoneDispatcher: B-Zone ACTIVATED at (2476.875, 1001.9258)
+07-17 22:54:33.932  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1001.9258
+07-17 22:54:34.627  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:34.977  1662  1662 D PinchGestureManager: B-Zone DOWN at y=1108.957
+07-17 22:54:34.978  1662  1662 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 22:54:35.741  1662  1662 D PinchGestureManager: B-Zone UP
+07-17 22:54:37.242  1662  1662 D TouchZoneDispatcher: B-Zone DISMISSED
+07-17 23:42:42.786  6668  6668 I MainActivity: PinchSystem initialized
+07-17 23:43:15.066  6668  6668 D TouchZoneDispatcher: B-Zone PENDING at (2486.875, 732.93164)
+07-17 23:43:15.568  6668  6668 D TouchZoneDispatcher: B-Zone ACTIVATED at (2486.875, 732.93164)
+07-17 23:43:15.574  6668  6668 D PinchGestureManager: B-Zone DOWN at y=732.93164
+07-17 23:43:16.846  6668  6668 D PinchGestureManager: B-Zone DOWN at y=798.94727
+07-17 23:43:16.847  6668  6668 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 23:43:18.126  6668  6668 D PinchGestureManager: B-Zone UP
+07-17 23:43:19.217  6668  6668 D PinchGestureManager: B-Zone DOWN at y=782.93164
+07-17 23:43:19.217  6668  6668 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 23:43:20.039  6668  6668 D PinchGestureManager: B-Zone UP
+07-17 23:43:21.305  6668  6668 D PinchGestureManager: B-Zone DOWN at y=732.93164
+07-17 23:43:21.305  6668  6668 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 23:43:21.757  6668  6668 D TouchZoneDispatcher: Module3: A-zone started → pausing B-zone scroll
+07-17 23:43:21.757  6668  6668 D PinchGestureManager: B-Zone scroll PAUSED (A-zone priority)
+07-17 23:43:22.011  6668  6668 D PinchGestureManager: B-Zone UP
+07-17 23:43:23.513  6668  6668 D TouchZoneDispatcher: B-Zone DISMISSED
+07-17 23:43:23.822  6668  6668 D TouchZoneDispatcher: B-Zone PENDING at (2491.875, 747.9707)
+07-17 23:43:24.323  6668  6668 D TouchZoneDispatcher: B-Zone ACTIVATED at (2491.875, 747.9707)
+07-17 23:43:24.324  6668  6668 D PinchGestureManager: B-Zone DOWN at y=747.9707
+07-17 23:43:24.842  6668  6668 D PinchGestureManager: B-Zone DOWN at y=742.9414
+07-17 23:43:24.842  6668  6668 D TouchZoneDispatcher: B-Zone pointer re-acquired: 0
+07-17 23:44:46.209  6905  6905 I MainActivity: PinchSystem initialized
+07-17 23:45:01.087  6905  6905 D TouchZoneDispatcher: B-Zone PENDING at (67.96875, 61.984375)
+07-17 23:46:22.763  6905  6905 D TouchZoneDispatcher: B-Zone PENDING at (2491.875, 95.96875)
+07-17 23:46:23.487  6905  6905 D TouchZoneDispatcher: B-Zone PENDING at (2491.875, 61.984375)
+07-17 23:46:24.207  6905  6905 D TouchZoneDispatcher: B-Zone PENDING at (2491.875, 61.984375)
+07-17 23:55:31.432  6905  6905 D TouchZoneDispatcher: B-Zone PENDING at (2533.9062, 754.9531)
+07-17 23:55:31.935  6905  6905 D TouchZoneDispatcher: B-Zone ACTIVATED at (2533.9062, 754.9531)
+07-17 23:55:31.940  6905  6905 D PinchGestureManager: B-Zone DOWN at y=754.9531
+07-17 23:55:33.068  6905  6905 D PinchGestureManager: B-Zone UP
+07-17 23:55:34.571  6905  6905 D TouchZoneDispatcher: B-Zone DISMISSED
+07-17 23:55:36.821  6905  6905 D TouchZoneDispatcher: B-Zone PENDING at (2501.875, 80.978516)
+
+

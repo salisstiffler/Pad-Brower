@@ -10,6 +10,7 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.webkit.WebView;
+import java.util.List;
 
 /**
  * TouchZoneDispatcher — the central event dispatcher that implements the full
@@ -73,6 +74,9 @@ public class TouchZoneDispatcher {
     // Adapter to inject events into Chromium/WebView — extension point for deeper integration
     private ChromiumEventAdapter chromiumAdapter;
 
+    // Touch preprocessing pipeline (capture + classifier)
+    private final TouchPreprocessor preprocessor;
+
     // Simple single-hand gesture recognizer for A-zone
     private final SingleHandGestureRecognizer gestureRecognizer;
 
@@ -112,6 +116,9 @@ public class TouchZoneDispatcher {
             }
         });
 
+        // initialize preprocessor (capture + classifier)
+        preprocessor = new TouchPreprocessor(context);
+
         reloadConfig();
     }
 
@@ -139,6 +146,21 @@ public class TouchZoneDispatcher {
         int action = event.getActionMasked();
         int actionIndex = event.getActionIndex();
         int pointerId = event.getPointerId(actionIndex);
+
+        // Preprocess & classify incoming pointers (GRIP vs INTERACTION)
+        try {
+            List<TouchPreprocessor.LabeledPointer> labeled = preprocessor.process(event);
+            int gripCount = 0;
+            for (TouchPreprocessor.LabeledPointer lp : labeled) {
+                if (lp.label == TouchClassifier.Label.GRIP) gripCount++;
+            }
+            if (gripCount > 0) {
+                Log.d(TAG, "Preprocessor: detected " + gripCount + " GRIP pointer(s)");
+            }
+        } catch (Throwable t) {
+            // Defensive: do not let preprocessing crash dispatch
+            Log.w(TAG, "Preprocessor error", t);
+        }
 
         boolean consumedInternal = false;
 
