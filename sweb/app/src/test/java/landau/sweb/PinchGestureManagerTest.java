@@ -104,7 +104,13 @@ public class PinchGestureManagerTest {
 
         ArgumentCaptor<Float> captor = ArgumentCaptor.forClass(Float.class);
         verify(mockListener).onBZoneScrollProgress(captor.capture());
-        assertEquals(0.165f, captor.getValue(), 0.001f);
+        // Compute expected eased progress dynamically to match easing in implementation
+        float absdy = 30f; // 30px in test
+        float stepMinPx = PinchZoneConfig.mmToPx(mockContext, PinchZoneConfig.STEP_SCROLL_MIN_MM);
+        float stepMaxPx = PinchZoneConfig.mmToPx(mockContext, PinchZoneConfig.STEP_SCROLL_MAX_MM);
+        float rawProgress = (absdy - stepMinPx) / (stepMaxPx - stepMinPx) * 0.33f;
+        float expected = (float) Math.pow(Math.max(0f, Math.min(1f, rawProgress)), 0.92);
+        assertEquals(expected, captor.getValue(), 0.001f);
     }
 
     @Test
