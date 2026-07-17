@@ -70,6 +70,9 @@ public class TouchZoneDispatcher {
     private final PinchGestureManager gestureManager;
     private final PinchOverlayView overlayView;
 
+    // Adapter to inject events into Chromium/WebView — extension point for deeper integration
+    private ChromiumEventAdapter chromiumAdapter;
+
     // Simple single-hand gesture recognizer for A-zone
     private final SingleHandGestureRecognizer gestureRecognizer;
 
@@ -123,6 +126,8 @@ public class TouchZoneDispatcher {
     public void setWebView(WebView webView) {
         this.webView = webView;
         gestureManager.setWebView(webView);
+        // Create or update the Chromium adapter (currently forwards to WebView)
+        this.chromiumAdapter = new ChromiumEventAdapter(webView);
     }
 
     // ========================================================================
