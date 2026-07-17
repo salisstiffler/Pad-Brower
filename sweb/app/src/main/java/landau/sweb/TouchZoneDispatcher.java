@@ -210,7 +210,13 @@ public class TouchZoneDispatcher {
                 MotionEvent synth = MotionEvent.obtain(
                         downTime, eventTime, MotionEvent.ACTION_MOVE,
                         pos[0], pos[1], metaState);
-                webView.dispatchTouchEvent(synth);
+                if (touchMappingProxy != null) {
+                    touchMappingProxy.forwardAzoneEvent(synth);
+                } else if (chromiumAdapter != null) {
+                    chromiumAdapter.injectTouchEvent(synth);
+                } else if (webView != null) {
+                    webView.dispatchTouchEvent(synth);
+                }
                 synth.recycle();
             }
         } else if (action == MotionEvent.ACTION_POINTER_DOWN && releasedPointerId != bZonePointerId) {
@@ -220,7 +226,13 @@ public class TouchZoneDispatcher {
             MotionEvent synth = MotionEvent.obtain(
                     eventTime, eventTime, MotionEvent.ACTION_DOWN,
                     x, y, metaState);
-            webView.dispatchTouchEvent(synth);
+            if (touchMappingProxy != null) {
+                touchMappingProxy.forwardAzoneEvent(synth);
+            } else if (chromiumAdapter != null) {
+                chromiumAdapter.injectTouchEvent(synth);
+            } else if (webView != null) {
+                webView.dispatchTouchEvent(synth);
+            }
             synth.recycle();
         } else if (isReleasingAZone) {
             // A-zone pointer lifting — find the current position and send ACTION_UP
@@ -232,7 +244,13 @@ public class TouchZoneDispatcher {
             MotionEvent synth = MotionEvent.obtain(
                     downTime, eventTime, MotionEvent.ACTION_UP,
                     pos[0], pos[1], metaState);
-            webView.dispatchTouchEvent(synth);
+            if (touchMappingProxy != null) {
+                touchMappingProxy.forwardAzoneEvent(synth);
+            } else if (chromiumAdapter != null) {
+                chromiumAdapter.injectTouchEvent(synth);
+            } else if (webView != null) {
+                webView.dispatchTouchEvent(synth);
+            }
             synth.recycle();
         }
     }
@@ -402,7 +420,14 @@ public class TouchZoneDispatcher {
         } catch (Throwable ignored) {}
 
         // IMPORTANT: Send CANCEL to WebView for the current touch to stop its internal long-press/click logic
-        if (webView != null) {
+        if (chromiumAdapter != null) {
+            long now = android.os.SystemClock.uptimeMillis();
+            MotionEvent cancel = MotionEvent.obtain(now, now, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+            try {
+                chromiumAdapter.injectTouchEvent(cancel);
+            } catch (Throwable ignored) {}
+            cancel.recycle();
+        } else if (webView != null) {
             long now = android.os.SystemClock.uptimeMillis();
             MotionEvent cancel = MotionEvent.obtain(now, now, MotionEvent.ACTION_CANCEL, 0, 0, 0);
             webView.dispatchTouchEvent(cancel);
