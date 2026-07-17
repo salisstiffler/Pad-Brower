@@ -210,9 +210,7 @@ public class TouchZoneDispatcher {
                 MotionEvent synth = MotionEvent.obtain(
                         downTime, eventTime, MotionEvent.ACTION_MOVE,
                         pos[0], pos[1], metaState);
-                if (touchMappingProxy != null) {
-                    touchMappingProxy.forwardAzoneEvent(synth);
-                } else if (chromiumAdapter != null) {
+                if (chromiumAdapter != null) {
                     chromiumAdapter.injectTouchEvent(synth);
                 } else if (webView != null) {
                     webView.dispatchTouchEvent(synth);
@@ -226,9 +224,7 @@ public class TouchZoneDispatcher {
             MotionEvent synth = MotionEvent.obtain(
                     eventTime, eventTime, MotionEvent.ACTION_DOWN,
                     x, y, metaState);
-            if (touchMappingProxy != null) {
-                touchMappingProxy.forwardAzoneEvent(synth);
-            } else if (chromiumAdapter != null) {
+            if (chromiumAdapter != null) {
                 chromiumAdapter.injectTouchEvent(synth);
             } else if (webView != null) {
                 webView.dispatchTouchEvent(synth);
@@ -244,9 +240,7 @@ public class TouchZoneDispatcher {
             MotionEvent synth = MotionEvent.obtain(
                     downTime, eventTime, MotionEvent.ACTION_UP,
                     pos[0], pos[1], metaState);
-            if (touchMappingProxy != null) {
-                touchMappingProxy.forwardAzoneEvent(synth);
-            } else if (chromiumAdapter != null) {
+            if (chromiumAdapter != null) {
                 chromiumAdapter.injectTouchEvent(synth);
             } else if (webView != null) {
                 webView.dispatchTouchEvent(synth);

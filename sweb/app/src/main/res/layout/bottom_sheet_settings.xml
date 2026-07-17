@@ -57,6 +57,25 @@
                 android:layout_centerVertical="true" />
         </RelativeLayout>
 
+        <!-- JavaScript Toggle -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="JavaScript"
+                android:textColor="@color/nexus_text_primary"
+                android:textSize="16sp" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_js"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true" />
+        </RelativeLayout>
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
