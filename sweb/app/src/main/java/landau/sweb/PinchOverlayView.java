@@ -11,6 +11,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
+import android.animation.ValueAnimator;
+import android.animation.Animator;
 
 /**
  * PinchOverlayView — a transparent overlay drawn on top of the WebView.
@@ -32,6 +34,10 @@ public class PinchOverlayView extends View {
     private PointF bZoneCenter = new PointF();
     private float bZoneRadius = 0f;
     private float bZoneAlpha = 0f;  // 0f = fully transparent, 1f = visible
+    // base radius used for pulse scaling
+    private float baseBZoneRadius = 0f;
+    // Animator for subtle pulse when B-zone activates
+    private ValueAnimator bZonePulseAnimator;
 
     // Scroll direction indicator
     private boolean scrollIndicatorVisible = false;
@@ -77,6 +83,7 @@ public class PinchOverlayView extends View {
     public void init(float edgeStripWidthPx, float bZoneRadiusPx) {
         this.edgeStripWidthPx = edgeStripWidthPx;
         this.bZoneRadius = bZoneRadiusPx;
+        this.baseBZoneRadius = bZoneRadiusPx;
     }
 
     // ---- Edge Hint ----
@@ -126,27 +133,43 @@ public class PinchOverlayView extends View {
         bZoneCenter.set(centerX, centerY);
         bZoneActive = true;
         bZoneAlpha = 1f;
-        // Flash briefly then become transparent (still "active" but invisible)
+        // Start a subtle pulse to signal activation
+        try {
+            if (bZonePulseAnimator != null && bZonePulseAnimator.isRunning()) {
+                bZonePulseAnimator.cancel();
+            }
+            bZonePulseAnimator = ValueAnimator.ofFloat(1f, 1.08f, 1f);
+            bZonePulseAnimator.setDuration((int) PinchZoneConfig.B_ZONE_PULSE_MS);
+            bZonePulseAnimator.addUpdateListener(anim -> {
+                float scale = (float) anim.getAnimatedValue();
+                bZoneRadius = baseBZoneRadius * scale;
+                invalidate();
+            });
+            bZonePulseAnimator.start();
+        } catch (Throwable t) {
+            // Fallback: ignore animation failures
+            bZoneRadius = baseBZoneRadius;
+        }
+
         invalidate();
         handler.postDelayed(this::fadeBZoneToTransparent, 200);
     }
 
     private void fadeBZoneToTransparent() {
-        final long startTime = System.currentTimeMillis();
-        final float startAlpha = bZoneAlpha;
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (!bZoneActive) return;
-                long elapsed = System.currentTimeMillis() - startTime;
-                float fraction = Math.min(1f, (float) elapsed / 200f);
-                bZoneAlpha = startAlpha * (1f - fraction);
-                invalidate();
-                if (fraction < 1f) {
-                    handler.post(this);
-                }
-            }
+        // Stop pulse animation if running
+        if (bZonePulseAnimator != null) {
+            try { bZonePulseAnimator.cancel(); } catch (Throwable ignored) {}
+            bZonePulseAnimator = null;
+            bZoneRadius = baseBZoneRadius;
+        }
+
+        ValueAnimator va = ValueAnimator.ofFloat(bZoneAlpha, 0f);
+        va.setDuration((int) PinchZoneConfig.EDGE_HINT_FADE_MS);
+        va.addUpdateListener(anim -> {
+            bZoneAlpha = (float) anim.getAnimatedValue();
+            invalidate();
         });
+        va.start();
     }
 
     /**
@@ -155,6 +178,12 @@ public class PinchOverlayView extends View {
     public void hideBZone() {
         bZoneActive = false;
         scrollIndicatorVisible = false;
+        if (bZonePulseAnimator != null) {
+            try { bZonePulseAnimator.cancel(); } catch (Throwable ignored) {}
+            bZonePulseAnimator = null;
+            bZoneRadius = baseBZoneRadius;
+        }
+        bZoneAlpha = 0f;
         invalidate();
     }
 

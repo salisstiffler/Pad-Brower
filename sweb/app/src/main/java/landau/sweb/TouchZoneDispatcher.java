@@ -3,6 +3,9 @@ package landau.sweb;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
@@ -358,6 +361,18 @@ public class TouchZoneDispatcher {
         bZoneState = BZoneState.ACTIVE;
         Log.d(TAG, "B-Zone ACTIVATED at (" + bZoneCenterX + ", " + bZoneCenterY + ")");
 
+        // OPTIONAL: brief haptic feedback to confirm activation
+        try {
+            Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+            if (vib != null && vib.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vib.vibrate(VibrationEffect.createOneShot(PinchZoneConfig.HAPTIC_FEEDBACK_MS, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vib.vibrate(PinchZoneConfig.HAPTIC_FEEDBACK_MS);
+                }
+            }
+        } catch (Throwable ignored) {}
+
         // IMPORTANT: Send CANCEL to WebView for the current touch to stop its internal long-press/click logic
         if (webView != null) {
             long now = android.os.SystemClock.uptimeMillis();
@@ -401,6 +416,19 @@ public class TouchZoneDispatcher {
 
     private void dismissBZone() {
         Log.d(TAG, "B-Zone DISMISSED");
+
+        // Optional: small haptic to indicate dismiss
+        try {
+            Vibrator vib = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+            if (vib != null && vib.hasVibrator()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vib.vibrate(VibrationEffect.createOneShot(PinchZoneConfig.HAPTIC_FEEDBACK_MS, VibrationEffect.DEFAULT_AMPLITUDE));
+                } else {
+                    vib.vibrate(PinchZoneConfig.HAPTIC_FEEDBACK_MS);
+                }
+            }
+        } catch (Throwable ignored) {}
+
         bZoneState = BZoneState.INACTIVE;
         bZonePointerId = -1;
         gestureManager.stopGesture();

@@ -132,8 +132,9 @@ public class PinchGestureManager {
                 int scrollDir = dy < 0 ? 1 : -1; // up movement → positive (scroll up)
                 doScrollBy((int) (scrollDir * stepScrollDistancePx));
                 float progress = (absdy - stepMinPx) / (stepMaxPx - stepMinPx) * 0.33f;
-                listener.onBZoneScrollProgress(progress);
-                overlayView.setScrollIndicator(progress, true);
+                float eased = easeProgress(progress);
+                listener.onBZoneScrollProgress(eased);
+                overlayView.setScrollIndicator(eased, true);
             }
 
         } else if (absdy > slowMinPx && absdy <= slowMaxPx) {
@@ -142,8 +143,9 @@ public class PinchGestureManager {
             int scrollDir = dy < 0 ? 1 : -1;
             startOrUpdateContinuousScroll(scrollDir * stepPx);
             float progress = 0.33f + (absdy - slowMinPx) / (slowMaxPx - slowMinPx) * 0.34f;
-            listener.onBZoneScrollProgress(progress);
-            overlayView.setScrollIndicator(progress, true);
+            float eased = easeProgress(progress);
+            listener.onBZoneScrollProgress(eased);
+            overlayView.setScrollIndicator(eased, true);
 
         } else if (absdy > fastThresholdPx) {
             // Tier 4: fast continuous scroll (readable speed)
@@ -151,8 +153,9 @@ public class PinchGestureManager {
             int scrollDir = dy < 0 ? 1 : -1;
             startOrUpdateContinuousScroll(scrollDir * stepPx);
             float progress = Math.min(1f, 0.67f + (absdy - fastThresholdPx) / fastThresholdPx * 0.33f);
-            listener.onBZoneScrollProgress(progress);
-            overlayView.setScrollIndicator(progress, true);
+            float eased = easeProgress(progress);
+            listener.onBZoneScrollProgress(eased);
+            overlayView.setScrollIndicator(eased, true);
         }
     }
 
@@ -230,6 +233,14 @@ public class PinchGestureManager {
     private void doScrollBy(int dy) {
         if (webView == null) return;
         webView.scrollBy(0, dy);
+    }
+
+    /**
+     * Apply a subtle easing curve to progress to make overlay feedback feel snappier
+     */
+    private float easeProgress(float p) {
+        p = Math.max(0f, Math.min(1f, p));
+        return (float) Math.pow(p, 0.92);
     }
 
     public boolean isGestureActive() {

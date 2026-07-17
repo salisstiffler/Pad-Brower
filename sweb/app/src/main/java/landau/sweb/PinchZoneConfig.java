@@ -32,6 +32,12 @@ public class PinchZoneConfig {
     /** Fade-out duration of edge hint, in ms */
     public static final long EDGE_HINT_FADE_MS = 200;
 
+    // --- Visual & Haptic tuning ---
+    /** Pulse animation duration for the B-zone visual (ms) */
+    public static final long B_ZONE_PULSE_MS = 400;
+    /** Haptic feedback duration on activation/dismiss (ms) */
+    public static final int HAPTIC_FEEDBACK_MS = 20;
+
     // --- Module 2: B-Zone Gesture Thresholds ---
     /** Vertical movement <= this: no gesture (dead zone), in mm */
     public static final float DEAD_ZONE_MM = 2.0f;
