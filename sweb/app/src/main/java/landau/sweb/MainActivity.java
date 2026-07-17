@@ -256,6 +256,7 @@ public class MainActivity extends Activity {
             new MenuAction("Clear cookies for this site", 0, this::clearCookiesThisSite),
 
             new MenuAction("Show tabs", R.drawable.tabs, this::showOpenTabs),
+            new MenuAction("Pinch Settings", 0, () -> startActivity(new android.content.Intent(MainActivity.this, SettingsActivity.class))),
             new MenuAction("Home", android.R.drawable.ic_menu_directions, () -> loadUrl("", getCurrentWebView())),
             new MenuAction("New tab", R.drawable.tab_new, () -> {
                 newTab("");

@@ -70,6 +70,9 @@ public class TouchZoneDispatcher {
     private final PinchGestureManager gestureManager;
     private final PinchOverlayView overlayView;
 
+    // Simple single-hand gesture recognizer for A-zone
+    private final SingleHandGestureRecognizer gestureRecognizer;
+
     public interface Listener {
         void onBZoneStateChanged(boolean active);
     }
@@ -86,6 +89,26 @@ public class TouchZoneDispatcher {
         this.context = context;
         this.gestureManager = gestureManager;
         this.overlayView = overlayView;
+        // init single-hand gesture recognizer
+        gestureRecognizer = new SingleHandGestureRecognizer();
+        // configure thresholds (convert mm to px)
+        float pageTurnPx = PinchZoneConfig.mmToPx(context, 30f);
+        float nudgePx = PinchZoneConfig.mmToPx(context, 5f);
+        gestureRecognizer.setPageTurnThresholdPx(pageTurnPx);
+        gestureRecognizer.setNudgeThresholdPx(nudgePx);
+        // listen for actions
+        gestureRecognizer.setListener(new SingleHandGestureRecognizer.Listener() {
+            @Override public void onPageTurnUp() {
+                if (webView != null) webView.pageDown(true);
+            }
+            @Override public void onPageTurnDown() {
+                if (webView != null) webView.pageUp(true);
+            }
+            @Override public void onSmallNudge(float dyPx) {
+                if (webView != null) webView.scrollBy(0, (int) (-dyPx / 2));
+            }
+        });
+
         reloadConfig();
     }
 
@@ -494,6 +517,8 @@ public class TouchZoneDispatcher {
     private void registerAZonePointer(int pointerId, float x, float y) {
         aZonePointers.put(pointerId, new float[]{x, y});
         aZoneHasActivePointer = true;
+        // notify gesture recognizer
+        gestureRecognizer.onDown(pointerId, x, y);
     }
 
     private void updateAZonePointer(int pointerId, float x, float y) {
@@ -502,9 +527,18 @@ public class TouchZoneDispatcher {
             pos[0] = x;
             pos[1] = y;
         }
+        // forward to gesture recognizer
+        gestureRecognizer.onMove(pointerId, x, y);
     }
 
     private void removeAZonePointer(int pointerId) {
+        // before removing, send up
+        float[] pos = aZonePointers.get(pointerId);
+        if (pos != null) {
+            gestureRecognizer.onUp(pointerId, pos[0], pos[1]);
+        } else {
+            gestureRecognizer.onUp(pointerId, 0f, 0f);
+        }
         aZonePointers.remove(pointerId);
     }
 
